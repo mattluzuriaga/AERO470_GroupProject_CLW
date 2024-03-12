@@ -3,88 +3,174 @@
 
 import numpy as np 
 from vpython import *
+import copy
+
+class boid():
+        def __init__(self,selfnum):
+            self.num = selfnum
+            pos1 = np.random.uniform(-20, 20)
+            pos2 = np.random.uniform(-20, 20)
+            pos3 = np.random.uniform(-20, 20)
+            self.pos = [pos1,pos2,pos3]
+            self.boid_obj = sphere(pos=vector(self.pos[0],self.pos[1],self.pos[2]),radius=2,color=color.yellow)
+            vel1 = np.random.uniform(-6, 6)
+            vel2 = np.random.uniform(-6, 6)
+            vel3 = np.random.uniform(-6, 6)
+            self.v = [vel1,vel2,vel3]
+
+        def Separate(self,pop_pos): # Boids need to locally separate from each other. Avoid determins avoidance safety factor
+            closex = 0
+            closey = 0
+            closez = 0
+            safetycirc = 4 # Radius of safety around each boid. Parameter can be tuned.
+            avoid = .005 # Avoidance factor, parameter can be tuned
+
+            for k in range(len(pop_pos)):
+                if k == self.num:
+                    pass
+                elif np.linalg.norm(np.array(self.pos)-np.array(pop_pos[k])) < safetycirc:
+                    closex += self.pos[0]-copy.deepcopy(pop_pos[k][0])
+                    closey += self.pos[1]-copy.deepcopy(pop_pos[k][1])
+                    closez += self.pos[2]-copy.deepcopy(pop_pos[k][2])
+            vx = closex*avoid
+            vy = closey*avoid
+            vz = closez*avoid
+            self.v[0] += vx
+            self.v[1] += vy
+            self.v[2] += vz
+            return(self)
+        
+        def Align(self,pop_pos,popv):
+            vx_avg = 0
+            vy_avg = 0
+            vz_avg = 0
+            neighbors = 0
+            visiblerange = 20 # radius that an individual boid can see. Tunable paramter
+            matchfact = .25 # How closely boids will align with nearby boids. Tunable parameter
+
+            for k in range(len(pop_pos)):
+                if k == self.num:
+                    pass
+                elif np.linalg.norm(np.array(self.pos)-np.array(pop_pos[k])) < visiblerange:
+                    vx_avg += copy.deepcopy(popv[k][0])
+                    vy_avg += copy.deepcopy(popv[k][1])
+                    vz_avg += copy.deepcopy(popv[k][2])
+                    neighbors += 1
+            
+            if neighbors > 0: # Average out sum of nearby velocities
+                vx_avg = vx_avg/neighbors
+                vy_avg = vy_avg/neighbors
+                vz_avg = vz_avg/neighbors
+
+            self.v[0] += (vx_avg-self.v[0])*matchfact
+            self.v[1] += (vy_avg-self.v[1])*matchfact
+            self.v[2] += (vz_avg-self.v[2])*matchfact
+            return(self)
+        
+        def flock(self,pop_pos):
+            x_avg_pos = 0
+            y_avg_pos = 0
+            z_avg_pos = 0
+            neighbors = 0
+            visiblerange = 12 # radius that an individual boid can see. Tunable paramter
+            centering_factor = .0001 # amount that boids will want to center themselves. Tunable parameter.
+            
+            for k in range(len(pop_pos)):
+                if k == self.num:
+                    pass
+                elif np.linalg.norm(np.array(self.pos)-np.array(pop_pos[k])) < visiblerange:
+                    x_avg_pos += copy.deepcopy(pop_pos[k][0])
+                    y_avg_pos += copy.deepcopy(pop_pos[k][1])
+                    z_avg_pos += copy.deepcopy(pop_pos[k][2])
+                    neighbors += 1
+            
+            if neighbors > 0: # Average out sum of nearby boid posiitions
+                x_avg_pos = x_avg_pos/neighbors
+                y_avg_pos = y_avg_pos/neighbors
+                z_avg_pos = z_avg_pos/neighbors
+
+            self.pos[0] += (x_avg_pos-self.pos[0])*centering_factor
+            self.pos[1] += (y_avg_pos-self.pos[1])*centering_factor
+            self.pos[2] += (z_avg_pos-self.pos[2])*centering_factor
+            return(self)
+        
+        def UpdatePos(self): 
+            self.pos = np.array(self.pos)+np.array(self.v)
+            nextpos = vector(self.pos[0],self.pos[1],self.pos[2])
+            self.boid_obj.pos = nextpos
+            return(self)
 
 class BOIDS():
-    def __init__ (self, num_boids, gamma, avoidance):
+    def __init__ (self, num_boids):
         self.num_boids = num_boids
-        self.gamma = gamma # Similar to agent based sim I think it's like a "filter" so to speak
-        self.avoidance = avoidance # Radius of avoidance around every boid
+        self.pop = []
+        self.boid_pop_pos = []
+        self.boid_pop_v = []
 
-    def Initialize_Swarm(self):
-        self.boid_pos = []
-        for i in range(self.num_boids):
-            x = np.random.uniform(-30, 30, 2)
-            self.boid_pos.append(x)
 
-    def Initial_Velocity(self):
-        self.dr = []
-        for i in range(self.num_boids):
-            dir = np.random.uniform(0, 2*np.pi)
-            self.dr.append(self.gamma * np.array([np.cos(dir), np.sin(dir)]))
-
-    def Update_Position(self):
-        self.Collision_Avoidance()
-        self.boid_pos = np.add(self.boid_pos, self.dr)
-        for i in range(len(self.boid_pos)):
-            for j in range(2):
-                if self.boid_pos[i][j] > 30:
-                    self.boid_pos[i][j] -= 60
-                elif self.boid_pos[i][j] < -30:
-                    self.boid_pos[i][j] += 60
-        return self.boid_pos
-    
-    def Collision_Avoidance(self): # I don't think this is the best way of operating collision avoidance, if you can think of something better I'm all ears.
-        # Basically I am trying to take the angle between the 2 velocity vectors and change it in a direction away from the nearby boid. It kinda works run the sim and see ;)
-        # I think there is a better way to do it or at least implement it, this is what I came up with.
-        # The driving equation here is just some vector math defining the angle between 2 vectors cos(angle) = a.b / [a]*[b]
-        for i in range(self.num_boids):
-            for j in range(self.num_boids):
-                if i != j:
-                    hypt = self.boid_pos[i] - self.boid_pos[j]
-                    collision_check = np.hypot(hypt[0], hypt[1])
-                    if collision_check < self.avoidance:
-                        mag = np.linalg.norm(self.dr[j])
-                        norm_i = np.linalg.norm(self.dr[i])
-                        norm_j = np.linalg.norm(self.dr[j])
-                        dot_ij = np.dot(self.dr[i], self.dr[j])
-                        angle = np.arccos(dot_ij/(norm_i*norm_j))
-                        self.dr[j] = np.array([mag*np.cos(angle), mag*np.sin(angle)])
-                    else:
-                        pass
-
-    def Flocking(self):
-        pass
-
-    def Steer_Towards_Center(self):
-        pass
+        for k in range(num_boids):
+            self.pop.append(boid(k))
+            self.boid_pop_pos.append(self.pop[k].pos)
+            self.boid_pop_v.append(self.pop[k].v)
 
 
 ## SIMULATION LOOP
             
 # Setting the Scene -- it would be cool if we could but in like a background texture for this !!
-scene.range = 30 
 scene.center = vector(0, 0, 0)  
-scene.camera.pos = vector(0, 0, 50) 
-boundary_thickness = 0.1
-boundary_color = color.blue
-box(pos=vector(0, 0, -boundary_thickness/2), size=vector(60, 60, boundary_thickness), color=boundary_color)
-box(pos=vector(0, 0, boundary_thickness/2), size=vector(60, 60, boundary_thickness), color=boundary_color)
+scene.camera.pos = vector(0, 0, 200) 
+scene.camera.axis = vector(0, 0, -200) 
 
 # Initialization of Swarm + Vpython Setup
-num_boids = 13
-boid_runloop = BOIDS(num_boids, 0.5, 4)
-boid_runloop.Initialize_Swarm()  
-boid_sim = []
-for pos in boid_runloop.boid_pos:  
-    boid_sim.append(sphere(pos=vector(pos[0], pos[1], 0), radius=1, color=color.red))  
+num_boids = 50
+BoidPop = BOIDS(num_boids)
 
-boid_runloop.Initial_Velocity() # Generating an initial velocity of all boids 
+while True:
+    rate(30)
+    # Align, separate, and flock
+    for k in BoidPop.pop:
+        k.Separate(BoidPop.boid_pop_pos)
+        k.Align(BoidPop.boid_pop_pos,BoidPop.boid_pop_v)
+        k.flock(BoidPop.boid_pop_pos)
 
-# Run the fuggin loop
-n = 0
-while n < 1000:
-    rate(20)
-    boid_update = boid_runloop.Update_Position() 
-    for i, pos in enumerate(boid_update):
-        boid_sim[i].pos = vector(pos[0], pos[1], 0)
-    n += 1  
+    # Implement speed limits:
+    for k in BoidPop.pop:
+        maxspeed = 6
+        minspeed = 3
+        
+        speed = np.linalg.norm(np.array(k.v))
+
+        if speed > maxspeed:
+            Vx = (k.v[0]/speed)*maxspeed
+            Vy = (k.v[1]/speed)*maxspeed
+            Vz = (k.v[2]/speed)*maxspeed
+            k.v = [Vx,Vy,Vz]
+        elif np.linalg.norm(np.array(k.v))<minspeed:
+            Vx = (k.v[0]/speed)*minspeed
+            Vy = (k.v[1]/speed)*minspeed
+            Vz = (k.v[2]/speed)*minspeed
+            k.v = [Vx,Vy,Vz]
+    
+    # Implement Turn Factor
+    lb = -35
+    ub = 35
+    turn = .25 # tunable paramter that makes boids turn before hitting edge of scren
+
+    for k in BoidPop.pop:
+        if k.pos[0] < lb:
+            k.v[0] = k.v[0] + turn
+        if k.pos[0] > ub:
+            k.v[0] = k.v[0] - turn
+        if k.pos[1] < lb:
+            k.v[1] = k.v[1] + turn
+        if k.pos[1] > ub:
+            k.v[1] = k.v[1] - turn
+        if k.pos[2] < lb:
+            k.v[2] = k.v[2] + turn
+        if k.pos[2] > ub:
+            k.v[2] = k.v[2] - turn
+
+    # Update Position
+    for k in BoidPop.pop:
+        k.UpdatePos()
+    
