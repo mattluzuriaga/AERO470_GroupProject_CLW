@@ -107,11 +107,62 @@ class BOIDS():
         self.boid_pop_pos = []
         self.boid_pop_v = []
 
-
         for k in range(num_boids):
             self.pop.append(boid(k))
             self.boid_pop_pos.append(self.pop[k].pos)
             self.boid_pop_v.append(self.pop[k].v)
+
+class HAWKS():
+    def __init__ (self, num_hawks):
+        self.num_hawk = num_hawks
+        self.hawk_pop = []
+        self.hawk_pop_pos = []
+        self.hawk_pop_v = []
+
+        for k in range(num_hawks):
+            self.hawk_pop.append(Hawk(k))
+            self.hawk_pop_pos.append(self.hawk_pop[k].pos)
+            self.hawk_pop_v.append(self.hawk_pop[k].v)
+
+class Hawk():
+    def __init__ (self, hawk_num):
+        self.hawk_num = hawk_num
+        pos1 = np.random.uniform(-20, 20)
+        pos2 = np.random.uniform(-20, 20)
+        pos3 = np.random.uniform(-20, 20)
+        self.pos = [pos1,pos2,pos3]
+        self.boid_obj = sphere(pos=vector(self.pos[0],self.pos[1],self.pos[2]),radius=4,color=color.red)
+        vel1 = np.random.uniform(-6, 6)
+        vel2 = np.random.uniform(-6, 6)
+        vel3 = np.random.uniform(-6, 6)
+        self.v = [vel1,vel2,vel3]
+
+    def target(self, pop_pos):
+        closex = 0
+        closey = 0
+        closez = 0
+        Hawk_Range = 10 # visibility of the hawk
+        targeting = .005 # Avoidance factor, parameter can be tuned
+
+        for k in range(len(pop_pos)):
+            if k == self.hawk_num:
+                pass
+            elif np.linalg.norm(np.array(self.pos)-np.array(pop_pos[k])) < Hawk_Range:
+                closex += self.pos[0]+copy.deepcopy(pop_pos[k][0])
+                closey += self.pos[1]+copy.deepcopy(pop_pos[k][1])
+                closez += self.pos[2]+copy.deepcopy(pop_pos[k][2])
+        vx = closex*targeting
+        vy = closey*targeting
+        vz = closez*targeting
+        self.v[0] += vx
+        self.v[1] += vy
+        self.v[2] += vz
+
+    def UpdatePos(self): 
+            self.pos = np.array(self.pos)+np.array(self.v)
+            nextpos = vector(self.pos[0],self.pos[1],self.pos[2])
+            self.boid_obj.pos = nextpos
+            return(self)
 
 
 ## SIMULATION LOOP
@@ -124,6 +175,8 @@ scene.camera.axis = vector(0, 0, -200)
 # Initialization of Swarm + Vpython Setup
 num_boids = 50
 BoidPop = BOIDS(num_boids)
+HawkPop = HAWKS(1)
+
 
 while True:
     rate(30)
@@ -132,6 +185,9 @@ while True:
         k.Separate(BoidPop.boid_pop_pos)
         k.Align(BoidPop.boid_pop_pos,BoidPop.boid_pop_v)
         k.flock(BoidPop.boid_pop_pos)
+
+    for k in HawkPop.hawk_pop:
+        k.target(HawkPop.hawk_pop_pos)
 
     # Implement speed limits:
     for k in BoidPop.pop:
@@ -173,4 +229,7 @@ while True:
     # Update Position
     for k in BoidPop.pop:
         k.UpdatePos()
+    for k in HawkPop.hawk_pop:
+        k.UpdatePos()
+
 
