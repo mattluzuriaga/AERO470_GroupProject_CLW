@@ -5,8 +5,10 @@ import numpy as np
 from vpython import *
 
 class BOIDS():
-    def __init__ (self, num_boids):
+    def __init__ (self, num_boids, gamma, avoidance):
         self.num_boids = num_boids
+        self.gamma = gamma # Similar to agent based sim I think it's like a "filter" so to speak
+        self.avoidance = avoidance # Radius of avoidance around every boid
 
     def Initialize_Swarm(self):
         self.boid_pos = []
@@ -14,7 +16,14 @@ class BOIDS():
             x = np.random.uniform(-30, 30, 2)
             self.boid_pos.append(x)
 
+    def Initial_Velocity(self):
+        self.dr = []
+        for i in range(self.num_boids):
+            dir = np.random.uniform(0, 2*np.pi)
+            self.dr.append(self.gamma * np.array([np.cos(dir), np.sin(dir)]))
+
     def Update_Position(self):
+        self.Collision_Avoidance()
         self.boid_pos = np.add(self.boid_pos, self.dr)
         for i in range(len(self.boid_pos)):
             for j in range(2):
@@ -23,12 +32,31 @@ class BOIDS():
                 elif self.boid_pos[i][j] < -30:
                     self.boid_pos[i][j] += 60
         return self.boid_pos
-
-    def Initial_Velocity(self):
-        self.dr = []
+    
+    def Collision_Avoidance(self): # I don't think this is the best way of operating collision avoidance, if you can think of something better I'm all ears.
+        # Basically I am trying to take the angle between the 2 velocity vectors and change it in a direction away from the nearby boid. It kinda works run the sim and see ;)
+        # I think there is a better way to do it or at least implement it, this is what I came up with.
+        # The driving equation here is just some vector math defining the angle between 2 vectors cos(angle) = a.b / [a]*[b]
         for i in range(self.num_boids):
-            dir = np.random.uniform(0, 2*np.pi)
-            self.dr.append([np.cos(dir), np.sin(dir)])
+            for j in range(self.num_boids):
+                if i != j:
+                    hypt = self.boid_pos[i] - self.boid_pos[j]
+                    collision_check = np.hypot(hypt[0], hypt[1])
+                    if collision_check < self.avoidance:
+                        mag = np.linalg.norm(self.dr[j])
+                        norm_i = np.linalg.norm(self.dr[i])
+                        norm_j = np.linalg.norm(self.dr[j])
+                        dot_ij = np.dot(self.dr[i], self.dr[j])
+                        angle = np.arccos(dot_ij/(norm_i*norm_j))
+                        self.dr[j] = np.array([mag*np.cos(angle), mag*np.sin(angle)])
+                    else:
+                        pass
+
+    def Flocking(self):
+        pass
+
+    def Steer_Towards_Center(self):
+        pass
 
 
 ## SIMULATION LOOP
@@ -44,7 +72,7 @@ box(pos=vector(0, 0, boundary_thickness/2), size=vector(60, 60, boundary_thickne
 
 # Initialization of Swarm + Vpython Setup
 num_boids = 13
-boid_runloop = BOIDS(num_boids)
+boid_runloop = BOIDS(num_boids, 0.5, 4)
 boid_runloop.Initialize_Swarm()  
 boid_sim = []
 for pos in boid_runloop.boid_pos:  
