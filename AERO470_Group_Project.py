@@ -4,6 +4,7 @@
 import numpy as np 
 from vpython import *
 import copy
+import Control_Functions
 
 class boid():
         def __init__(self,selfnum):
@@ -100,33 +101,9 @@ class boid():
             self.boid_obj.pos = nextpos
             return(self)
 
-class BOIDS():
-    def __init__ (self, num_boids):
-        self.num_boids = num_boids
-        self.pop = []
-        self.boid_pop_pos = []
-        self.boid_pop_v = []
-
-        for k in range(num_boids):
-            self.pop.append(boid(k))
-            self.boid_pop_pos.append(self.pop[k].pos)
-            self.boid_pop_v.append(self.pop[k].v)
-
-class HAWKS():
-    def __init__ (self, num_hawks):
-        self.num_hawk = num_hawks
-        self.hawk_pop = []
-        self.hawk_pop_pos = []
-        self.hawk_pop_v = []
-
-        for k in range(num_hawks):
-            self.hawk_pop.append(Hawk(k))
-            self.hawk_pop_pos.append(self.hawk_pop[k].pos)
-            self.hawk_pop_v.append(self.hawk_pop[k].v)
-
 class Hawk():
-    def __init__ (self, hawk_num):
-        self.hawk_num = hawk_num
+    def __init__ (self, num):
+        self.num = num
         pos1 = np.random.uniform(-20, 20)
         pos2 = np.random.uniform(-20, 20)
         pos3 = np.random.uniform(-20, 20)
@@ -137,26 +114,19 @@ class Hawk():
         vel3 = np.random.uniform(-6, 6)
         self.v = [vel1,vel2,vel3]
 
-    def target(self, pop_pos):
-        closex = 0
-        closey = 0
-        closez = 0
+    def target(self, hawk_pop_pos, pop_pos):
         Hawk_Range = 10 # visibility of the hawk
-        targeting = .005 # Avoidance factor, parameter can be tuned
+        targeting = .005 # Targeting factor
 
-        for k in range(len(pop_pos)):
-            if k == self.hawk_num:
-                pass
-            elif np.linalg.norm(np.array(self.pos)-np.array(pop_pos[k])) < Hawk_Range:
-                closex += self.pos[0]+copy.deepcopy(pop_pos[k][0])
-                closey += self.pos[1]+copy.deepcopy(pop_pos[k][1])
-                closez += self.pos[2]+copy.deepcopy(pop_pos[k][2])
-        vx = closex*targeting
-        vy = closey*targeting
-        vz = closez*targeting
-        self.v[0] += vx
-        self.v[1] += vy
-        self.v[2] += vz
+        boid_min = []
+        for i in range(len(hawk_pop_pos)): # identifying which boid is closest to the hawk
+            for k in range(len(pop_pos)):
+                min_calc = (np.linalg.norm(np.array(hawk_pop_pos[i])-np.array(pop_pos[k])))
+                boid_min.append(np.array([min_calc, k]))
+            boid_min.sort(key=lambda x: x[0])
+            if boid_min[0][0] < Hawk_Range:
+                targeting_vector = np.array(pop_pos[int(boid_min[0][1])]) - np.array(hawk_pop_pos[i])
+                self.v += targeting * targeting_vector
 
     def UpdatePos(self): 
             self.pos = np.array(self.pos)+np.array(self.v)
@@ -164,6 +134,17 @@ class Hawk():
             self.boid_obj.pos = nextpos
             return(self)
 
+class BOIDS():
+    def __init__ (self, input_class, num_boids):
+        self.num_boids = num_boids
+        self.pop = []
+        self.boid_pop_pos = []
+        self.boid_pop_v = []
+
+        for k in range(num_boids):
+            self.pop.append(input_class(k))
+            self.boid_pop_pos.append(self.pop[k].pos)
+            self.boid_pop_v.append(self.pop[k].v)
 
 ## SIMULATION LOOP
 
@@ -174,62 +155,35 @@ scene.camera.axis = vector(0, 0, -200)
 
 # Initialization of Swarm + Vpython Setup
 num_boids = 50
-BoidPop = BOIDS(num_boids)
-HawkPop = HAWKS(1)
-
+BoidPop = BOIDS(boid, num_boids)
+HawkPop = BOIDS(Hawk, 1)
 
 while True:
     rate(30)
     # Align, separate, and flock
     for k in BoidPop.pop:
         k.Separate(BoidPop.boid_pop_pos)
-        k.Align(BoidPop.boid_pop_pos,BoidPop.boid_pop_v)
+        k.Align(BoidPop.boid_pop_pos, BoidPop.boid_pop_v)
         k.flock(BoidPop.boid_pop_pos)
 
-    for k in HawkPop.hawk_pop:
-        k.target(HawkPop.hawk_pop_pos)
+    for k in HawkPop.pop:
+        k.target(HawkPop.boid_pop_pos, BoidPop.boid_pop_pos)
 
     # Implement speed limits:
-    for k in BoidPop.pop:
-        maxspeed = 6
-        minspeed = 3
-
-        speed = np.linalg.norm(np.array(k.v))
-
-        if speed > maxspeed:
-            Vx = (k.v[0]/speed)*maxspeed
-            Vy = (k.v[1]/speed)*maxspeed
-            Vz = (k.v[2]/speed)*maxspeed
-            k.v = [Vx,Vy,Vz]
-        elif np.linalg.norm(np.array(k.v))<minspeed:
-            Vx = (k.v[0]/speed)*minspeed
-            Vy = (k.v[1]/speed)*minspeed
-            Vz = (k.v[2]/speed)*minspeed
-            k.v = [Vx,Vy,Vz]
+    Control_Functions.Speed_Limit(BoidPop.pop)
+    Control_Functions.Speed_Limit(HawkPop.pop)
 
     # Implement Turn Factor
     lb = -35
     ub = 35
     turn = .25 # tunable parameter that makes boids turn before hitting edge of scren
-
-    for k in BoidPop.pop:
-        if k.pos[0] < lb:
-            k.v[0] = k.v[0] + turn
-        if k.pos[0] > ub:
-            k.v[0] = k.v[0] - turn
-        if k.pos[1] < lb:
-            k.v[1] = k.v[1] + turn
-        if k.pos[1] > ub:
-            k.v[1] = k.v[1] - turn
-        if k.pos[2] < lb:
-            k.v[2] = k.v[2] + turn
-        if k.pos[2] > ub:
-            k.v[2] = k.v[2] - turn
+    Control_Functions.Turn_Factor(BoidPop.pop, lb, ub, turn)
+    Control_Functions.Turn_Factor(HawkPop.pop, lb, ub, turn)
 
     # Update Position
     for k in BoidPop.pop:
         k.UpdatePos()
-    for k in HawkPop.hawk_pop:
+    for k in HawkPop.pop:
         k.UpdatePos()
 
 
