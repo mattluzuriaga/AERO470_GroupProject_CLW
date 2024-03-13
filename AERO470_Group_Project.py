@@ -95,17 +95,17 @@ class boid():
             self.pos[2] += (z_avg_pos-self.pos[2])*centering_factor
             return(self)
         
-        def avoid_hawk(self, pop_pos, hawk_pos): # will update tmmr in class
+        def avoid_hawk(self, pop_pos, hawk_pop_pos):
             closex = 0
             closey = 0
             closez = 0
-            safetycirc = 4 # Radius of safety around each boid. Parameter can be tuned.
+            safetycirc = 40 # Radius of safety around each boid. Parameter can be tuned.
             avoid = .005 # Avoidance factor, parameter can be tuned
 
-            for k in range(len(pop_pos)):
+            for k in range(len(hawk_pop_pos)):
                 if k == self.num:
                     pass
-                elif np.linalg.norm(np.array(self.pos)-np.array(pop_pos[k])) < safetycirc:
+                elif np.linalg.norm(np.array(self.pos)-np.array(hawk_pop_pos[k])) < safetycirc:
                     closex += self.pos[0]-copy.deepcopy(pop_pos[k][0])
                     closey += self.pos[1]-copy.deepcopy(pop_pos[k][1])
                     closez += self.pos[2]-copy.deepcopy(pop_pos[k][2])
@@ -148,7 +148,7 @@ class Hawk():
             boid_min.sort(key=lambda x: x[0])
             if boid_min[0][0] < Hawk_Range:
                 targeting_vector = np.array(pop_pos[int(boid_min[0][1])]) - np.array(hawk_pop_pos[i])
-                #self.v = boid_pop_v[int(boid_min[0][1])]
+                # self.v = boid_pop_v[int(boid_min[0][1])]
                 self.v += targeting_vector*targeting
 
     def UpdatePos(self): 
@@ -182,19 +182,24 @@ BoidPop = BOIDS(boid, num_boids)
 HawkPop = BOIDS(Hawk, 1)
 
 while True:
-    rate(30)
+    rate(60)
     # Align, separate, and flock
     for k in BoidPop.pop:
         k.Separate(BoidPop.boid_pop_pos)
         k.Align(BoidPop.boid_pop_pos, BoidPop.boid_pop_v)
         k.flock(BoidPop.boid_pop_pos)
+        k.avoid_hawk(BoidPop.boid_pop_pos, HawkPop.boid_pop_pos)
 
     for k in HawkPop.pop:
         k.target(HawkPop.boid_pop_pos, BoidPop.boid_pop_pos, BoidPop.boid_pop_v)
 
     # Implement speed limits:
-    Control_Functions.Speed_Limit(BoidPop.pop)
-    Control_Functions.Speed_Limit(HawkPop.pop)
+    minspeed_boid = 3
+    maxspeed_boid = 6
+    minspeed_hawk = 6
+    maxspeed_hawk = 12
+    Control_Functions.Speed_Limit(BoidPop.pop, minspeed_boid, maxspeed_boid)
+    Control_Functions.Speed_Limit(HawkPop.pop, minspeed_boid, maxspeed_boid)
 
     # Implement Turn Factor
     lb = -35

@@ -1,10 +1,8 @@
 import numpy as np
 
  # Implement speed limits:
-def Speed_Limit(input_pop):
+def Speed_Limit(input_pop, minspeed, maxspeed):
     for k in input_pop:
-        maxspeed = 6
-        minspeed = 3
 
         speed = np.linalg.norm(np.array(k.v))
 
