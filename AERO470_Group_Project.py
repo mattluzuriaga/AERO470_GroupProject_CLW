@@ -136,7 +136,7 @@ class Hawk():
         vel3 = np.random.uniform(-6, 6)
         self.v = [vel1,vel2,vel3]
 
-    def target(self, hawk_pop_pos, pop_pos):
+    def target(self, hawk_pop_pos, pop_pos, boid_pop_v):
         Hawk_Range = 16 # visibility of the hawk
         targeting = .005 # Targeting factor
 
@@ -148,7 +148,8 @@ class Hawk():
             boid_min.sort(key=lambda x: x[0])
             if boid_min[0][0] < Hawk_Range:
                 targeting_vector = np.array(pop_pos[int(boid_min[0][1])]) - np.array(hawk_pop_pos[i])
-                self.v += targeting * targeting_vector
+                #self.v = boid_pop_v[int(boid_min[0][1])]
+                self.v += targeting_vector*targeting
 
     def UpdatePos(self): 
             self.pos = np.array(self.pos)+np.array(self.v)
@@ -189,7 +190,7 @@ while True:
         k.flock(BoidPop.boid_pop_pos)
 
     for k in HawkPop.pop:
-        k.target(HawkPop.boid_pop_pos, BoidPop.boid_pop_pos)
+        k.target(HawkPop.boid_pop_pos, BoidPop.boid_pop_pos, BoidPop.boid_pop_v)
 
     # Implement speed limits:
     Control_Functions.Speed_Limit(BoidPop.pop)
