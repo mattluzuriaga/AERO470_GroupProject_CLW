@@ -94,6 +94,28 @@ class boid():
             self.pos[1] += (y_avg_pos-self.pos[1])*centering_factor
             self.pos[2] += (z_avg_pos-self.pos[2])*centering_factor
             return(self)
+        
+        def avoid_hawk(self, pop_pos, hawk_pos): # will update tmmr in class
+            closex = 0
+            closey = 0
+            closez = 0
+            safetycirc = 4 # Radius of safety around each boid. Parameter can be tuned.
+            avoid = .005 # Avoidance factor, parameter can be tuned
+
+            for k in range(len(pop_pos)):
+                if k == self.num:
+                    pass
+                elif np.linalg.norm(np.array(self.pos)-np.array(pop_pos[k])) < safetycirc:
+                    closex += self.pos[0]-copy.deepcopy(pop_pos[k][0])
+                    closey += self.pos[1]-copy.deepcopy(pop_pos[k][1])
+                    closez += self.pos[2]-copy.deepcopy(pop_pos[k][2])
+            vx = closex*avoid
+            vy = closey*avoid
+            vz = closez*avoid
+            self.v[0] += vx
+            self.v[1] += vy
+            self.v[2] += vz
+            return(self)
 
         def UpdatePos(self): 
             self.pos = np.array(self.pos)+np.array(self.v)
@@ -115,7 +137,7 @@ class Hawk():
         self.v = [vel1,vel2,vel3]
 
     def target(self, hawk_pop_pos, pop_pos):
-        Hawk_Range = 10 # visibility of the hawk
+        Hawk_Range = 16 # visibility of the hawk
         targeting = .005 # Targeting factor
 
         boid_min = []
