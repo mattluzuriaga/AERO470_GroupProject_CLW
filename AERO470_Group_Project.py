@@ -7,17 +7,34 @@ import copy
 import Control_Functions
 
 class boid():
-        def __init__(self,selfnum):
+        def __init__(self, selfnum):
             self.num = selfnum
-            pos1 = np.random.uniform(-20, 20)
+            pos1 = np.random.uniform(-20, 20)  # random initialization position coord
             pos2 = np.random.uniform(-20, 20)
             pos3 = np.random.uniform(-20, 20)
-            self.pos = [pos1,pos2,pos3]
-            self.boid_obj = sphere(pos=vector(self.pos[0],self.pos[1],self.pos[2]),radius=2,color=color.yellow)
+            self.pos = [pos1, pos2, pos3]  # store coords in list
+
+            # define the base vertices of the pyramid
+            v0 = vector(0, 0, 0)
+            v1 = vector(2, 0, 0)
+            v2 = vector(1, 2, 0)
+
+            # define the apex of the pyramid
+            apex = vector(1, 1, 1)  # Adjust the position of the apex as needed
+
+            # translate the pyramid to the random position
+            self.boid_obj = pyramid(
+                pos=vector(pos1, pos2, pos3),
+                size=vector(2, 2, 3),  # Adjust the size of the pyramid as needed
+                axis=(apex - vector(pos1, pos2, pos3)),
+                up=v2 - v0,
+                color=color.yellow
+            )
+
             vel1 = np.random.uniform(-6, 6)
             vel2 = np.random.uniform(-6, 6)
             vel3 = np.random.uniform(-6, 6)
-            self.v = [vel1,vel2,vel3]
+            self.v = [vel1, vel2, vel3]
 
         def Separate(self,pop_pos): # Boids need to locally separate from each other. Avoid determins avoidance safety factor
             closex = 0
@@ -139,6 +156,7 @@ class Hawk():
     def target(self, hawk_pop_pos, pop_pos, boid_pop_v):
         Hawk_Range = 16 # visibility of the hawk
         targeting = .005 # Targeting factor
+        catch_distance = 1 # distance for hawl to catch/eat boid
 
         boid_min = []
         for i in range(len(hawk_pop_pos)): # identifying which boid is closest to the hawk
@@ -147,9 +165,16 @@ class Hawk():
                 boid_min.append(np.array([min_calc, k]))
             boid_min.sort(key=lambda x: x[0])
             if boid_min[0][0] < Hawk_Range:
+                if boid_min[0][0] < catch_distance:
+                    # remove boid
+                    del pop_pos[int(boid_min[0][1])]
+                    del boid_pop_v[int(boid_min[0][1])]
+                    # after catching boid, track to next closest
+                    return self.target(hawk_pop_pos, pop_pos, boid_pop_v)
                 targeting_vector = np.array(pop_pos[int(boid_min[0][1])]) - np.array(hawk_pop_pos[i])
                 # self.v = boid_pop_v[int(boid_min[0][1])]
-                self.v += targeting_vector*targeting
+                # move hawk to closest boid 
+                self.v += targeting_vector * targeting
 
     def UpdatePos(self): 
             self.pos = np.array(self.pos)+np.array(self.v)
