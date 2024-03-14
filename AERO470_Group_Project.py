@@ -116,7 +116,7 @@ class boid():
             closex = 0
             closey = 0
             closez = 0
-            safetycirc = 40 # Radius of safety around each boid. Parameter can be tuned.
+            safetycirc =  40 # Radius of safety around each boid. Parameter can be tuned.
             avoid = .005 # Avoidance factor, parameter can be tuned
 
             for k in range(len(hawk_pop_pos)):
@@ -141,40 +141,86 @@ class boid():
             return(self)
 
 class Hawk():
-    def __init__ (self, num):
-        self.num = num
-        pos1 = np.random.uniform(-20, 20)
-        pos2 = np.random.uniform(-20, 20)
-        pos3 = np.random.uniform(-20, 20)
-        self.pos = [pos1,pos2,pos3]
-        self.boid_obj = sphere(pos=vector(self.pos[0],self.pos[1],self.pos[2]),radius=4,color=color.red)
-        vel1 = np.random.uniform(-6, 6)
-        vel2 = np.random.uniform(-6, 6)
-        vel3 = np.random.uniform(-6, 6)
-        self.v = [vel1,vel2,vel3]
+    def __init__(self, selfnum):
+            self.num = selfnum
+            pos1 = np.random.uniform(-20, 20)  # random initialization position coord
+            pos2 = np.random.uniform(-20, 20)
+            pos3 = np.random.uniform(-20, 20)
+            self.pos = [pos1, pos2, pos3]  # store coords in list
+
+            # define the base vertices of the pyramid
+            v0 = vector(0, 0, 0)
+            v1 = vector(2, 0, 0)
+            v2 = vector(1, 2, 0)
+
+            # define the apex of the pyramid
+            apex = vector(1, 1, 1)  # Adjust the position of the apex as needed
+
+            # translate the pyramid to the random position
+            self.boid_obj = pyramid(
+                pos=vector(pos1, pos2, pos3),
+                size=vector(4, 4, 6),  # Adjust the size of the pyramid as needed
+                axis=(apex - vector(pos1, pos2, pos3)),
+                up=v2 - v0,
+                color=color.red
+            )
+
+            vel1 = np.random.uniform(-6, 6)
+            vel2 = np.random.uniform(-6, 6)
+            vel3 = np.random.uniform(-6, 6)
+            self.v = [vel1, vel2, vel3]
 
     def target(self, hawk_pop_pos, pop_pos, boid_pop_v):
-        Hawk_Range = 16 # visibility of the hawk
+        Hawk_Range = 18 # visibility of the hawk
         targeting = .005 # Targeting factor
         catch_distance = 1 # distance for hawl to catch/eat boid
 
-        boid_min = []
-        for i in range(len(hawk_pop_pos)): # identifying which boid is closest to the hawk
-            for k in range(len(pop_pos)):
-                min_calc = (np.linalg.norm(np.array(hawk_pop_pos[i])-np.array(pop_pos[k])))
-                boid_min.append(np.array([min_calc, k]))
-            boid_min.sort(key=lambda x: x[0])
-            if boid_min[0][0] < Hawk_Range:
-                if boid_min[0][0] < catch_distance:
-                    # remove boid
-                    del pop_pos[int(boid_min[0][1])]
-                    del boid_pop_v[int(boid_min[0][1])]
-                    # after catching boid, track to next closest
-                    return self.target(hawk_pop_pos, pop_pos, boid_pop_v)
-                targeting_vector = np.array(pop_pos[int(boid_min[0][1])]) - np.array(hawk_pop_pos[i])
-                # self.v = boid_pop_v[int(boid_min[0][1])]
-                # move hawk to closest boid 
+        # initialize
+        boid_min_dist = float('inf')
+        closest_boid_index = -1
+
+        for i, boid_pos in enumerate(pop_pos):
+            # calc distance
+            distance = np.linalg.norm(np.array(self.pos) - np.array(boid_pos))
+            # check if boid os within hawks range 
+            if distance < Hawk_Range and distance < boid_min_dist:
+                boid_min_dist = distance
+                closest_boid_index = i 
+            
+            # if boid os within range
+            if closest_boid_index != -1:
+                closest_boid_pos = pop_pos[closest_boid_index]
+                closest_boid_vel = boid_pop_v[closest_boid_index]
+
+                # move hawk towards closest boid
+                targeting_vector = np.array(closest_boid_pos) - np.array(self.pos)
                 self.v += targeting_vector * targeting
+
+                # check if hawk cought boid 
+                if boid_min_dist < catch_distance:
+                    # delete caught boid from sim 
+                    del pop_pos[closest_boid_index]
+                    del boid_pop_v[closest_boid_index]
+
+
+        # Check if the hawk has caught the boid
+        # boid_min = []
+        # for i in range(len(hawk_pop_pos)): # identifying which boid is closest to the hawk
+        #     for k in range(len(pop_pos)):
+        #         min_calc = (np.linalg.norm(np.array(hawk_pop_pos[i])-np.array(pop_pos[k])))
+        #         boid_min.append(np.array([min_calc, k]))
+        #     boid_min.sort(key=lambda x: x[0])
+        #     if boid_min[0][0] < Hawk_Range:
+        #         if boid_min[0][0] < catch_distance:
+        #             # remove boid
+        #             del pop_pos[int(boid_min[0][1])]
+        #             del boid_pop_v[int(boid_min[0][1])]
+        #             # after catching boid, track to next closest
+        #             return self.target(hawk_pop_pos, pop_pos, boid_pop_v)
+        #         targeting_vector = np.array(pop_pos[int(boid_min[0][1])]) - np.array(hawk_pop_pos[i])
+        #         # self.v = boid_pop_v[int(boid_min[0][1])]
+        #         # move hawk to closest boid 
+        #         self.v += targeting_vector * targeting
 
     def UpdatePos(self): 
             self.pos = np.array(self.pos)+np.array(self.v)
@@ -202,7 +248,7 @@ scene.camera.pos = vector(0, 0, 200)
 scene.camera.axis = vector(0, 0, -200) 
 
 # Initialization of Swarm + Vpython Setup
-num_boids = 50
+num_boids = 1
 BoidPop = BOIDS(boid, num_boids)
 HawkPop = BOIDS(Hawk, 1)
 
@@ -220,7 +266,7 @@ while True:
 
     # Implement speed limits:
     minspeed_boid = 3
-    maxspeed_boid = 6
+    maxspeed_boid = 4
     minspeed_hawk = 6
     maxspeed_hawk = 12
     Control_Functions.Speed_Limit(BoidPop.pop, minspeed_boid, maxspeed_boid)
