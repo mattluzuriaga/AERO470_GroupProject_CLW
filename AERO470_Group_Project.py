@@ -9,9 +9,9 @@ import Control_Functions
 class boid():
         def __init__(self, selfnum):
             self.num = selfnum
-            pos1 = np.random.uniform(-20, 20)  # random initialization position coord
-            pos2 = np.random.uniform(-20, 20)
-            pos3 = np.random.uniform(-20, 20)
+            pos1 = np.random.uniform(-100, 100)  # random initialization position coord
+            pos2 = np.random.uniform(-100, 100)
+            pos3 = np.random.uniform(-100, 100)
             self.pos = [pos1, pos2, pos3]  # store coords in list
 
             # define the base vertices of the pyramid
@@ -116,7 +116,7 @@ class boid():
             closex = 0
             closey = 0
             closez = 0
-            safetycirc =  40 # Radius of safety around each boid. Parameter can be tuned.
+            safetycirc =  10 # Radius of safety around each boid. Parameter can be tuned.
             avoid = .005 # Avoidance factor, parameter can be tuned
 
             for k in range(len(hawk_pop_pos)):
@@ -165,42 +165,47 @@ class Hawk():
                 color=color.red
             )
 
-            vel1 = np.random.uniform(-6, 6)
-            vel2 = np.random.uniform(-6, 6)
-            vel3 = np.random.uniform(-6, 6)
+            vel1 = np.random.uniform(-12, 12)
+            vel2 = np.random.uniform(-12, 12)
+            vel3 = np.random.uniform(-12, 12)
             self.v = [vel1, vel2, vel3]
 
-    def target(self, hawk_pop_pos, pop_pos, boid_pop_v):
-        Hawk_Range = 18 # visibility of the hawk
-        targeting = .005 # Targeting factor
-        catch_distance = 1 # distance for hawl to catch/eat boid
+    def targeting_onoff(self, hawk_pop_pos, pop_pos, boid_pop_v):
+        Hawk_Range = 40 # visibility of the hawk
+        self.targeting = .03 # Targeting factor
+        self.catch_distance = 1 # distance for hawl to catch/eat boid
 
         # initialize
-        boid_min_dist = float('inf')
-        closest_boid_index = -1
+        self.boid_min_dist = float('inf')
+        self.closest_boid_index = -1
 
         for i, boid_pos in enumerate(pop_pos):
             # calc distance
             distance = np.linalg.norm(np.array(self.pos) - np.array(boid_pos))
             # check if boid os within hawks range 
-            if distance < Hawk_Range and distance < boid_min_dist:
-                boid_min_dist = distance
-                closest_boid_index = i 
+            if distance < Hawk_Range and distance < self.boid_min_dist:
+                self.boid_min_dist = distance
+                self.closest_boid_index = i 
+                
+        return self.boid_min_dist, self.closest_boid_index
+
+    def target(self, hawk_pop_pos, pop_pos, boid_pop_v):
             
             # if boid os within range
-            if closest_boid_index != -1:
-                closest_boid_pos = pop_pos[closest_boid_index]
-                closest_boid_vel = boid_pop_v[closest_boid_index]
+            if self.closest_boid_index != -1:
+                closest_boid_pos = pop_pos[self.closest_boid_index]
+                closest_boid_vel = boid_pop_v[self.closest_boid_index]
 
                 # move hawk towards closest boid
                 targeting_vector = np.array(closest_boid_pos) - np.array(self.pos)
-                self.v += targeting_vector * targeting
+                self.v += targeting_vector * self.targeting
 
                 # check if hawk cought boid 
-                if boid_min_dist < catch_distance:
+                if self.boid_min_dist < self.catch_distance:
                     # delete caught boid from sim 
-                    del pop_pos[closest_boid_index]
-                    del boid_pop_v[closest_boid_index]
+                    self.boid_min_dist = float('inf')
+                    del pop_pos[self.closest_boid_index]
+                    del boid_pop_v[self.closest_boid_index]
 
 
         # Check if the hawk has caught the boid
@@ -240,6 +245,9 @@ class BOIDS():
             self.boid_pop_pos.append(self.pop[k].pos)
             self.boid_pop_v.append(self.pop[k].v)
 
+    def change_color(self, index, color):
+        self.pop[index].boid_obj.color = color
+
 ## SIMULATION LOOP
 
 # Setting the Scene -- it would be cool if we could but in like a background texture for this !!
@@ -248,12 +256,12 @@ scene.camera.pos = vector(0, 0, 200)
 scene.camera.axis = vector(0, 0, -200) 
 
 # Initialization of Swarm + Vpython Setup
-num_boids = 1
+num_boids = 10
 BoidPop = BOIDS(boid, num_boids)
 HawkPop = BOIDS(Hawk, 1)
 
 while True:
-    rate(60)
+    rate(20)
     # Align, separate, and flock
     for k in BoidPop.pop:
         k.Separate(BoidPop.boid_pop_pos)
@@ -262,11 +270,17 @@ while True:
         k.avoid_hawk(BoidPop.boid_pop_pos, HawkPop.boid_pop_pos)
 
     for k in HawkPop.pop:
-        k.target(HawkPop.boid_pop_pos, BoidPop.boid_pop_pos, BoidPop.boid_pop_v)
+        test = k.targeting_onoff(HawkPop.boid_pop_pos, BoidPop.boid_pop_pos, BoidPop.boid_pop_v) 
+        print(test)
+        if test != float('inf'):
+            k.target(HawkPop.boid_pop_pos, BoidPop.boid_pop_pos, BoidPop.boid_pop_v)  
+            BoidPop.change_color(test[1], color.green)  # Change the color of the targeted boid to green   
+        else:
+            pass
 
     # Implement speed limits:
     minspeed_boid = 3
-    maxspeed_boid = 4
+    maxspeed_boid = 6
     minspeed_hawk = 6
     maxspeed_hawk = 12
     Control_Functions.Speed_Limit(BoidPop.pop, minspeed_boid, maxspeed_boid)
