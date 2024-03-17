@@ -201,7 +201,8 @@ class Hawk():
                 self.v += targeting_vector * self.targeting
 
                 # check if hawk cought boid 
-                if self.boid_min_dist < self.catch_distance:
+                if self.boid_min_dist < self.catch_distance: # not working, I think its j getting rid of index but still runs in sim 
+                    # maybe delete has to be in boids class and not hawk class 
                     # delete caught boid from sim 
                     self.boid_min_dist = float('inf')
                     del pop_pos[self.closest_boid_index]
