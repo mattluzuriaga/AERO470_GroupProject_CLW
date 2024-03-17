@@ -257,12 +257,12 @@ scene.camera.pos = vector(0, 0, 200)
 scene.camera.axis = vector(0, 0, -200) 
 
 # Initialization of Swarm + Vpython Setup
-num_boids = 10
+num_boids = 50
 BoidPop = BOIDS(boid, num_boids)
 HawkPop = BOIDS(Hawk, 1)
 
 while True:
-    rate(20)
+    # rate(20)
     # Align, separate, and flock
     for k in BoidPop.pop:
         k.Separate(BoidPop.boid_pop_pos)
@@ -299,5 +299,4 @@ while True:
         k.UpdatePos()
     for k in HawkPop.pop:
         k.UpdatePos()
-
 
