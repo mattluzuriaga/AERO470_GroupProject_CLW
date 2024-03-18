@@ -41,7 +41,7 @@ class boid():
             closey = 0
             closez = 0
             safetycirc = 3 # Radius of safety around each boid. Parameter can be tuned.
-            avoid = .0005 # Avoidance factor, parameter can be tuned
+            avoid = .2 # Avoidance factor, parameter can be tuned
 
             for k in range(len(pop_pos)):
                 if k == self.num:
@@ -64,7 +64,7 @@ class boid():
             vz_avg = 0
             neighbors = 0
             visiblerange = 20 # radius that an individual boid can see. Tunable paramter
-            matchfact = .3 # How closely boids will align with nearby boids. Tunable parameter
+            matchfact = .05 # How closely boids will align with nearby boids. Tunable parameter
 
             for k in range(len(pop_pos)):
                 tempdist = np.linalg.norm(np.array(self.pos)-np.array(pop_pos[k]))
@@ -181,7 +181,7 @@ class Hawk():
 
     def targeting_onoff(self, hawk_pop_pos, pop_pos, boid_pop_v):
         Hawk_Range = 40 # visibility of the hawk
-        self.targeting = .3 # Targeting factor
+        self.targeting = .1 # Targeting factor
 
         # initialize
         self.boid_min_dist = float('inf')
@@ -252,7 +252,7 @@ iprev = 0 # switch tells when to turn boid color back to yellow (AKA hawk has sw
 
 while True:
     count = count +1
-    rate(5)
+    rate(20)
     
     # Align, separate, and flock
     if count == 500:
