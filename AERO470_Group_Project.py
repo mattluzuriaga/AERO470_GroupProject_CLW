@@ -201,7 +201,8 @@ class Hawk():
                 self.v += targeting_vector * self.targeting
 
                 # check if hawk cought boid 
-                if self.boid_min_dist < self.catch_distance:
+                if self.boid_min_dist < self.catch_distance: # not working, I think its j getting rid of index but still runs in sim 
+                    # maybe delete has to be in boids class and not hawk class 
                     # delete caught boid from sim 
                     self.boid_min_dist = float('inf')
                     del pop_pos[self.closest_boid_index]
@@ -256,12 +257,12 @@ scene.camera.pos = vector(0, 0, 200)
 scene.camera.axis = vector(0, 0, -200) 
 
 # Initialization of Swarm + Vpython Setup
-num_boids = 10
+num_boids = 50
 BoidPop = BOIDS(boid, num_boids)
 HawkPop = BOIDS(Hawk, 1)
 
 while True:
-    rate(20)
+    # rate(20)
     # Align, separate, and flock
     for k in BoidPop.pop:
         k.Separate(BoidPop.boid_pop_pos)
@@ -298,5 +299,4 @@ while True:
         k.UpdatePos()
     for k in HawkPop.pop:
         k.UpdatePos()
-
 
