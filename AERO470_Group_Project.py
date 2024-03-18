@@ -143,9 +143,9 @@ class boid():
 class Hawk():
     def __init__(self, selfnum):
             self.num = selfnum
-            pos1 = np.random.uniform(-20, 20)  # random initialization position coord
-            pos2 = np.random.uniform(-20, 20)
-            pos3 = np.random.uniform(-20, 20)
+            pos1 = np.random.uniform(-100, 100)  # random initialization position coord
+            pos2 = np.random.uniform(-100, 100)
+            pos3 = np.random.uniform(-100, 100)
             self.pos = [pos1, pos2, pos3]  # store coords in list
 
             # define the base vertices of the pyramid
