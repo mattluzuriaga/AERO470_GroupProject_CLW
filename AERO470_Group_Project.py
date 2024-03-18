@@ -254,7 +254,7 @@ scene.camera.axis = vector(0, 0, -200)
 
 # Initialization of Swarm + Vpython Setup
 collision = 0
-mode = "observer"
+mode = "Hawk" # observer to see whole, Hawk to see hawk perspective
 num_boids = 50
 BoidPop = BOIDS(boid, num_boids)
 HawkPop = HAWKS(1)
@@ -264,7 +264,7 @@ iprev = 0 # switch tells when to turn boid color back to yellow (AKA hawk has sw
 
 while True:
     count = count +1
-    # rate(20)
+    rate(20)
     
     # Align, separate, and flock
     if count == 500:
