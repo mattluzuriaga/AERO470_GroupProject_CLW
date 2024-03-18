@@ -251,7 +251,7 @@ class BOIDS():
 
 ## SIMULATION LOOP
 
-# Setting the Scene -- it would be cool if we could but in like a background texture for this !!
+# Setting the Scene -- it would be cool if we could put in like a background texture for this !!
 scene.center = vector(0, 0, 0)  
 scene.camera.pos = vector(0, 0, 200) 
 scene.camera.axis = vector(0, 0, -200) 
