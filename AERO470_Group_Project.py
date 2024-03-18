@@ -120,8 +120,8 @@ class boid():
             closex = 0
             closey = 0
             closez = 0
-            safetycirc =  10 # Radius of safety around each boid. Parameter can be tuned.
-            avoid = .1 # Avoidance factor, parameter can be tuned
+            safetycirc =  12 # Radius of safety around each boid. Parameter can be tuned.
+            avoid = .2 # Avoidance factor, parameter can be tuned
 
             for k in range(len(hawk_pop_pos)):
                 if k == self.num:
@@ -147,9 +147,9 @@ class boid():
 class Hawk():
     def __init__(self, selfnum):
             self.num = selfnum
-            pos1 = np.random.uniform(-20, 20)  # random initialization position coord
-            pos2 = np.random.uniform(-20, 20)
-            pos3 = np.random.uniform(-20, 20)
+            pos1 = np.random.uniform(-100, 100)  # random initialization position coord
+            pos2 = np.random.uniform(-100, 100)
+            pos3 = np.random.uniform(-100, 100)
             self.pos = [pos1, pos2, pos3]  # store coords in list
 
             # define the base vertices of the pyramid
@@ -181,7 +181,7 @@ class Hawk():
 
     def targeting_onoff(self, hawk_pop_pos, pop_pos, boid_pop_v):
         Hawk_Range = 40 # visibility of the hawk
-        self.targeting = .1 # Targeting factor
+        self.targeting = .05 # Targeting factor
 
         # initialize
         self.boid_min_dist = float('inf')
@@ -202,8 +202,9 @@ class Hawk():
         return self.boid_min_dist, self.closest_boid_index
 
     def target(self, hawk_pop_pos, pop_pos, boid_pop_v):
-            
-            # if boid os within range
+            closest_boid_pos = [0, 0,0]
+
+            # if boid is within range
             if self.closest_boid_index != -1:
                 closest_boid_pos = pop_pos[self.closest_boid_index]
                 closest_boid_vel = boid_pop_v[self.closest_boid_index]
@@ -211,6 +212,19 @@ class Hawk():
                 # move hawk towards closest boid
                 targeting_vector = np.array(closest_boid_pos) - np.array(self.pos)
                 self.v += targeting_vector * self.targeting 
+            
+            if abs(closest_boid_pos[0]) > 200 or abs(closest_boid_pos[1]) > 200 or abs(closest_boid_pos[2]) > 200:
+                pos1 = np.random.uniform(-100, 100)  # random initialization position coord
+                pos2 = np.random.uniform(-100, 100)
+                pos3 = np.random.uniform(-100, 100)
+                self.pos = [pos1, pos2, pos3]  # store coords in list
+                vel1 = np.random.uniform(-12, 12)
+                vel2 = np.random.uniform(-12, 12)
+                vel3 = np.random.uniform(-12, 12)
+                self.v = [vel1, vel2, vel3]
+
+                print("Hawk chased a boid off the map, respawning hawk...")
+                del pop_pos[self.closest_boid_index]
 
     def UpdatePos(self): 
             self.pos = np.array(self.pos)+np.array(self.v)
