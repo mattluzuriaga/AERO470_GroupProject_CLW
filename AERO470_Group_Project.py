@@ -215,7 +215,7 @@ class Hawk():
     def UpdatePos(self): 
             self.pos = np.array(self.pos)+np.array(self.v)
             nextpos = vector(self.pos[0],self.pos[1],self.pos[2])
-            self.boid_obj.pos = nextpos
+            self.boid_obj.pos = copy.deepcopy(nextpos)
             return(self)
 
 class HAWKS():
@@ -264,7 +264,7 @@ iprev = 0 # switch tells when to turn boid color back to yellow (AKA hawk has sw
 
 while True:
     count = count +1
-    rate(20)
+    # rate(20)
     
     # Align, separate, and flock
     if count == 500:
