@@ -181,7 +181,7 @@ class Hawk():
 
     def targeting_onoff(self, hawk_pop_pos, pop_pos, boid_pop_v):
         Hawk_Range = 40 # visibility of the hawk
-        self.targeting = .02 # Targeting factor
+        self.targeting = .3 # Targeting factor
 
         # initialize
         self.boid_min_dist = float('inf')
@@ -218,18 +218,6 @@ class Hawk():
             self.boid_obj.pos = copy.deepcopy(nextpos)
             return(self)
 
-class HAWKS():
-    def __init__ (self, num_hawks):
-        self.num_boids = num_hawks
-        self.pop = []
-        self.hawk_pop_pos = []
-        self.hawk_pop_v = []
-
-        for k in range(num_hawks):
-            self.pop.append(Hawk(k))
-            self.hawk_pop_pos.append(self.pop[k].pos)
-            self.hawk_pop_v.append(self.pop[k].v)
-
 class BOIDS():
     def __init__ (self, input_class, num_boids):
         self.num_boids = num_boids
@@ -254,34 +242,45 @@ scene.camera.axis = vector(0, 0, -200)
 
 # Initialization of Swarm + Vpython Setup
 collision = 0
-mode = "Hawk" # observer to see whole, Hawk to see hawk perspective
-num_boids = 50
+mode = "observer" # observer to see whole, Hawk to see hawk perspective
+num_boids = 20
 BoidPop = BOIDS(boid, num_boids)
-HawkPop = HAWKS(1)
+HawkPop = BOIDS(Hawk, 1)
 count = 0
 
 iprev = 0 # switch tells when to turn boid color back to yellow (AKA hawk has switched and started tracking new boid)
 
 while True:
     count = count +1
-    # rate(20)
+    rate(5)
     
     # Align, separate, and flock
     if count == 500:
         print("Hi")
+    
+    BoidPop_pop_pos = []
+    BoidPop_pop_v = []
+    HawkPop_pop_pos = []
+
+
+    for i in range(num_boids):
+        BoidPop_pop_pos.append(BoidPop.pop[i].pos)
+        BoidPop_pop_v.append(BoidPop.pop[i].v)
+    for i in range(1):
+        HawkPop_pop_pos.append(HawkPop.pop[i].pos)
 
     for k in BoidPop.pop:
-        k.Separate(BoidPop.boid_pop_pos)
-        k.Align(BoidPop.boid_pop_pos, BoidPop.boid_pop_v)
-        k.flock(BoidPop.boid_pop_pos)
-        k.avoid_hawk(BoidPop.boid_pop_pos, HawkPop.hawk_pop_pos)
+        k.Separate(BoidPop_pop_pos)
+        k.Align(BoidPop_pop_pos, BoidPop_pop_v)
+        k.flock(BoidPop_pop_pos)
+        k.avoid_hawk(BoidPop_pop_pos, HawkPop_pop_pos)
 
     for k in HawkPop.pop:
-        test = k.targeting_onoff(HawkPop.hawk_pop_pos, BoidPop.boid_pop_pos, BoidPop.boid_pop_v) 
+        test = k.targeting_onoff(HawkPop_pop_pos, BoidPop_pop_pos, BoidPop_pop_v) 
         print(test)
         if test != float('inf'):
-            k.target(HawkPop.hawk_pop_pos, BoidPop.boid_pop_pos, BoidPop.boid_pop_v)  
-            BoidPop.change_color(test[1], color.green)  # Change the color of the targeted boid to green   
+            k.target(HawkPop_pop_pos, BoidPop_pop_pos, BoidPop_pop_v) 
+            BoidPop.change_color(test[1], color.blue)  # Change the color of the targeted boid to green   
         if test[1] != iprev:
             BoidPop.change_color(iprev, color.yellow)
         iprev = copy.deepcopy(test[1])
